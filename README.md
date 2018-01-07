@@ -9,6 +9,10 @@ Tensorflow based object classifier for [Pass the Pigs](https://en.wikipedia.org/
 ## Generating training data
 The training data is generated from video files taken from the dices. This makes it easier to get large number of training pictures. The files to prepare the data are located in **prepare_data/** folder.
 Note that each video file should only contain one result (e.g. leaning jowler)
+
+Sample video files can be downloaded from: http://vider.kapsi.fi/sikatrain/sikatrain_videos.tar.gz 
+These video files should be extracted to **prepare_data/videos**.
+
 From the video files, every 10th frame is taken and a very simple object detection algorithm is used to find the pig and draw a bounding box around it.
 This data is then converted to TFRecord files, that can be crunched by the Tensorflow
 
@@ -17,6 +21,9 @@ The script will need to be modified to change the input files. The script can be
 ```
 python convert_train_data.py
 ```
+
+Note that you will need to uncomment the lines for full dataset in the script if you downloaded the full dataset.
+
 This script saves the raw jpg files to jpg/ subdirectory and a JSON file containing all the classification data to json_data.txt. Additionally debug images are saved to debug/ subdirectory. Here, one should verify that the bounding boxes are ok. If they are not ok, the detection threshold may need adjustments.
 
 After creating JSON and JPEG data, they can be transformed to TFRecord file. It can be done with the tool:
