@@ -1,0 +1,29 @@
+item {
+  id: 1
+  name: 'side'
+}
+
+item {
+  id: 2
+  name: 'side_spot'
+}
+
+item {
+  id: 3
+  name: 'razorback'
+}
+
+item {
+  id: 4
+  name: 'trotter'
+}
+
+item {
+  id: 5
+  name: 'snouter'
+}
+
+item {
+  id: 6
+  name: 'leaning_jowler'
+}
