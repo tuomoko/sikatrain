@@ -8,11 +8,13 @@
 
 'use strict';
 
-var errorElement = document.querySelector('#errorMsg');
+var errorElement = document.getElementById('errorMsg');
 var video = document.querySelector('video');
 var snapbutton = document.getElementById('snap');
 var canvas = document.getElementById('canvas');
 var photo = document.getElementById('photo');
+var result_div = document.getElementById('result');
+var photo_taken = false;
 
 // Put variables in global scope to make them available to the browser console.
 var constraints = window.constraints = {
@@ -69,60 +71,68 @@ function blobToDataURL(blob, callback) {
 
 
 function takepicture() {
-    var context = canvas.getContext('2d');
-    
-    var width = video.videoWidth;
-    var height = video.videoHeight;
-    if (width == 0) {
-        width = 10;
-        height = 10;
+    // Retake photo
+    if (photo_taken == true) {
+        video.style.display = 'block';
+        photo.style.display = 'none';
+        snapbutton.innerText="Take photo";
+        photo_taken = false
     }
-    canvas.width = width;
-    canvas.height = height;
-    context.drawImage(video, 0, 0, width, height);
+    else
+    {
     
-    
-    var data = canvas.toDataURL('image/png');
-    photo.setAttribute('src', data);
-    //video.hide();
-    
-    console.log('Data:', data);
-    
-    // Create a new FormData object.
-    var formData = new FormData();
-    
-    // Add the file to the request.
-    formData.append('file', dataURLtoBlob(data), 'filename.png');
-    
-    // Set up the AJAX request.
-    var xhr = new XMLHttpRequest();
-    xhr.responseType    = "blob";
-    
-    // Open the connection.
-    xhr.open('POST', '/api/predict', true);
-    
-    errorMsg('Starting file upload', 'fileupload');
+        var context = canvas.getContext('2d');
         
-    // Set up a handler for when the request finishes.
-    xhr.onload = function () {
-      if (xhr.status === 200) {
-        errorMsg('The file uploaded successfully', 'fileupload');
-        blobToDataURL(
-            xhr.response,
-            function(dataurl){
-                console.log(dataurl);
-                photo.setAttribute('src', dataurl);
-            }
-        );
-      } else {
-        errorMsg('An error occurred while uploading the file. Try again', 'fileupload');
-      }
-    };
+        var width = video.videoWidth;
+        var height = video.videoHeight;
+        if (width == 0) {
+            width = 10;
+            height = 10;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        context.drawImage(video, 0, 0, width, height);
+        
+        
+        var data = canvas.toDataURL('image/png');
+        photo.setAttribute('src', data);
+        
+        photo.style.display = 'block';
+        video.style.display = 'none';
+        snapbutton.innerText = "Retake";
+        photo_taken = true
+        
+        // Create a new FormData object.
+        var formData = new FormData();
+        
+        // Add the file to the request.
+        formData.append('file', dataURLtoBlob(data), 'filename.png');
+        
+        // Set up the AJAX request.
+        var xhr = new XMLHttpRequest();
+        xhr.responseType    = "json";
+        
+        // Open the connection.
+        xhr.open('POST', '/api/predict', true);
+        
+        //errorMsg('Starting file upload', 'fileupload');
+            
+        // Set up a handler for when the request finishes.
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+            //errorMsg('The file uploaded successfully', 'fileupload');
+            photo.setAttribute('src', xhr.response.img_url);
+            console.log(xhr.response);
+            result_div.innerText = "Pig 1 is "+xhr.response.pig1+" and Pig 2 is "+xhr.response.pig2;
+          } else {
+            errorMsg('An error occurred while uploading the file. Try again', 'fileupload');
+          }
+        };
 
-    // Send the Data.
-    xhr.send(formData);
-    
-  }
+        // Send the Data.
+        xhr.send(formData);
+    }
+}
 
 snapbutton.addEventListener('click', function(ev){
       takepicture();

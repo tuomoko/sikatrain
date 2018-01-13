@@ -1,15 +1,16 @@
 import json, argparse, time
-
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="-1"  
 import tensorflow as tf
 
-from flask import Flask, request, url_for, render_template, send_file, redirect
+from flask import Flask, request, url_for, render_template, send_file, redirect, jsonify, send_from_directory
 from flask_cors import CORS
 
 from collections import defaultdict
 from io import StringIO, BytesIO
 from PIL import Image
-import os
 import numpy as np
+import uuid
 
 #from OpenSSL import SSL
 import ssl
@@ -31,11 +32,13 @@ def serve_pil_image(pil_img):
 
 # General application configurations
 app = Flask(__name__)
-IM_SCALED_SIZE = 720, 405
+IM_SCALED_SIZE = 320, 320
 UPLOAD_FOLDER = 'uploads'
-app.config['IM_SCALED_SIZE'] = IM_SCALED_SIZE
+PROCESSED_FOLDER = 'processed'
+SCORE_THR = 0.5
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['SCORE_THR'] = 0.5
+#TODO Remove the next file after development is done
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # Prevent caching js files
 cors = CORS(app)
 
 ##################################################
@@ -45,7 +48,7 @@ cors = CORS(app)
 @app.route("/api/predict", methods=['POST'])
 def predict():
     start = time.time()
-    retvalue = ""
+    return_data = []
     # check if the post request has the file part
     if 'file' not in request.files:
         print('No file part')
@@ -58,13 +61,15 @@ def predict():
         print('No selected file')
         return redirect(request.url)
     if file:
-        filename = file.filename
-        full_filename = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        #filename = file.filename
+        name = str(uuid.uuid4())
+        upload_filename = name + '.png'
+        full_filename = os.path.join(app.config['UPLOAD_FOLDER'], upload_filename)
         file.save(full_filename)
         print("serving: "+full_filename)
         image = Image.open(full_filename)
         image = image.convert('RGB')
-        image.thumbnail(app.config['IM_SCALED_SIZE'])
+        image.thumbnail(IM_SCALED_SIZE)
         # the array based representation of the image will be used later in order to prepare the
         # result image with boxes and labels on it.
         image_np = load_image_into_numpy_array(image)
@@ -85,19 +90,25 @@ def predict():
         boxes_squeeze = np.squeeze(boxes)
         scores_squeeze = np.squeeze(scores)
         
-        indexes = list()
-        for idx, val in enumerate(scores_squeeze):
-            if val > app.config['SCORE_THR']:
-                indexes.append(idx)
-            else:
-                break
+        if scores_squeeze[1] > SCORE_THR:
+            print "Two pigs found"
+            pig1 = category_index[class_squeeze[0]]['name']
+            pig2 = category_index[class_squeeze[1]]['name']
+        elif scores_squeeze[0] > SCORE_THR:
+            print "One pig found"
+            pig1 = 'bacon'
+            pig2 = 'bacon'
+        else:
+            print "No pigs found"
+            pig1 = ""
+            pig2 = ""
         
-        retvalue += "Pigs found: "+str(len(indexes))+"\n"
-        for idx in indexes:
-            retvalue += "Pig: "+str(idx)+" is "+category_index[class_squeeze[idx]]['name']+"\n"
-        print(retvalue)
+        print "Pig 1 = " + pig1 + " Pig 2 = " + pig2
         
-        
+        # Reopen the full image after classification
+        image = Image.open(full_filename)
+        image = image.convert('RGB')
+        image_np = load_image_into_numpy_array(image)
         
         #Visualization of the results of a detection.
         vis_util.visualize_boxes_and_labels_on_image_array(
@@ -107,19 +118,42 @@ def predict():
              np.squeeze(scores),
              category_index,
              use_normalized_coordinates=True,
-             line_thickness=4)
+             line_thickness=2,
+             max_boxes_to_draw=2,
+             min_score_thresh=SCORE_THR)
         
-        return_image = Image.fromarray(image_np)
-        retvalue = serve_pil_image(return_image)
+        processed_image = Image.fromarray(image_np)
+        processed_filename = name + '.jpg'
+        full_filename = os.path.join(PROCESSED_FOLDER, processed_filename)
+        processed_image.save(full_filename, 'JPEG', quality=90)
+        
+        return_data = dict()
+        return_data['pig1'] = str(pig1)
+        return_data['pig2'] = str(pig2)
+        return_data['img_url'] = os.path.join('processed', processed_filename)
+        
+        #retvalue = json.dumps(data)
+        #retvalue = serve_pil_image(processed_image)
         #plt.figure(figsize=IMAGE_SIZE)
         #plt.imshow(image_np)
         #plt.show()
         
     print("Time spent handling the request: %f" % (time.time() - start))
     
-    return retvalue
+    print "Returning "+str(return_data)
+    return jsonify(return_data)
 ##################################################
 # END API part
+##################################################
+
+##################################################
+# Serving the images
+##################################################
+@app.route('/processed/<path:filename>')
+def download_file(filename):
+    return send_from_directory(PROCESSED_FOLDER, filename, as_attachment=True)
+##################################################
+# END Serving the images
 ##################################################
 
 ##################################################
@@ -129,7 +163,7 @@ def predict():
 def index():
     return render_template('index.html')
 ##################################################
-# END API part
+# END Index and other stuff
 ##################################################
 
 
@@ -141,7 +175,7 @@ if __name__ == "__main__":
     parser.add_argument("--frozen_model_filename", default="results/frozen_model.pb", type=str, help="Frozen model file to import")
     parser.add_argument("--label_map_path", default="label_map.pbtxt", type=str, help="Label file")
     parser.add_argument("--num_labels", default=6, type=int, help="Number of labels")
-    parser.add_argument("--gpu_memory", default=.2, type=float, help="GPU memory per process")
+    parser.add_argument("--gpu_memory", default=.5, type=float, help="GPU memory per process")
     args = parser.parse_args()
     
     ##################################################
