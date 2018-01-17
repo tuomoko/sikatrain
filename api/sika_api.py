@@ -17,6 +17,55 @@ import ssl
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 
+#TODO some better way to store the location of the model and label map
+
+frozen_model_filename="/home/tuomo/sikatrain/model/graph/frozen_inference_graph.pb" # Path to frozen model
+label_map_path="/home/tuomo/sikatrain/model/pig_label_map.pbtxt" # Path to label map
+num_labels=6 # Number of labels
+gpu_memory=.5 # GPU memory per process
+
+# Load label maps
+label_map = label_map_util.load_labelmap(label_map_path)
+categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=num_labels, use_display_name=True)
+category_index = label_map_util.create_category_index(categories)
+
+# Function that is called once (per worker?) when the application is loaded
+def start_tf(app):
+    # Load detection graph
+    print('Loading the model')
+    detection_graph = tf.Graph()
+    with detection_graph.as_default():
+      od_graph_def = tf.GraphDef()
+      with tf.gfile.GFile(frozen_model_filename, 'rb') as fid:
+        serialized_graph = fid.read()
+        od_graph_def.ParseFromString(serialized_graph)
+        tf.import_graph_def(od_graph_def, name='')
+    #graph = load_graph(frozen_model_filename)
+    #x = graph.get_tensor_by_name('prefix/Placeholder/inputs_placeholder:0')
+    #y = graph.get_tensor_by_name('prefix/Accuracy/predictions:0')
+    
+    # Tensors
+    # Definite input and output Tensors for detection_graph
+    image_tensor = detection_graph.get_tensor_by_name('image_tensor:0')
+    # Each box represents a part of the image where a particular object was detected.
+    detection_boxes = detection_graph.get_tensor_by_name('detection_boxes:0')
+    # Each score represent how level of confidence for each of the objects.
+    # Score is shown on the result image, together with the class label.
+    detection_scores = detection_graph.get_tensor_by_name('detection_scores:0')
+    detection_classes = detection_graph.get_tensor_by_name('detection_classes:0')
+    num_detections = detection_graph.get_tensor_by_name('num_detections:0')
+
+    fetches = [detection_boxes, detection_scores, detection_classes, num_detections]
+
+    print('Starting Session, setting the GPU memory usage to %f' % gpu_memory)
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=gpu_memory)
+    sess_config = tf.ConfigProto(gpu_options=gpu_options)
+    persistent_sess = tf.Session(graph=detection_graph, config=sess_config)
+
+    app.config['tf_sess'] = persistent_sess;
+    app.config['tf_fetches'] = fetches;
+    app.config['tf_image_tensor'] = image_tensor;
+
 # Helper function
 def load_image_into_numpy_array(image):
   (im_width, im_height) = image.size
@@ -36,66 +85,8 @@ UPLOAD_FOLDER = 'uploads'
 PROCESSED_FOLDER = 'processed'
 SCORE_THR = 0.5
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-#TODO Remove the next file after development is done
-frozen_model_filename="/home/tuomo/sikatrain/model/graph/frozen_inference_graph.pb" # Path to frozen model
-label_map_path="/home/tuomo/sikatrain/model/pig_label_map.pbtxt" # Path to label map
-num_labels=6 # Number of labels
-gpu_memory=.5 # GPU memory per process
 
-
-# Load label maps
-label_map = label_map_util.load_labelmap(label_map_path)
-categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=num_labels, use_display_name=True)
-category_index = label_map_util.create_category_index(categories)
-
-
-def get_tf_session():
-    tfsess = getattr(g, '_tfsess', None)
-    if tfsess is None:
-        tfsess = g._tfsess = create_tf_session()
-    return tfsess
-
-@app.teardown_appcontext
-def teardown_tf_session(exception):
-    tfsess = getattr(g, '_tfsess', None)
-    if tfsess is not None:
-        print "Closing session"
-        tfsess.close()
-
-def create_tf_session():
-    # Load detection graph
-    print('Loading the model')
-    detection_graph = tf.Graph()
-    with detection_graph.as_default():
-      od_graph_def = tf.GraphDef()
-      with tf.gfile.GFile(frozen_model_filename, 'rb') as fid:
-        serialized_graph = fid.read()
-        od_graph_def.ParseFromString(serialized_graph)
-        tf.import_graph_def(od_graph_def, name='')
-    #graph = load_graph(frozen_model_filename)
-    #x = graph.get_tensor_by_name('prefix/Placeholder/inputs_placeholder:0')
-    #y = graph.get_tensor_by_name('prefix/Accuracy/predictions:0')
-    
-    # Tensors
-    # Definite input and output Tensors for detection_graph
-    g._image_tensor = detection_graph.get_tensor_by_name('image_tensor:0')
-    # Each box represents a part of the image where a particular object was detected.
-    detection_boxes = detection_graph.get_tensor_by_name('detection_boxes:0')
-    # Each score represent how level of confidence for each of the objects.
-    # Score is shown on the result image, together with the class label.
-    detection_scores = detection_graph.get_tensor_by_name('detection_scores:0')
-    detection_classes = detection_graph.get_tensor_by_name('detection_classes:0')
-    num_detections = detection_graph.get_tensor_by_name('num_detections:0')
-
-    g._fetches = [detection_boxes, detection_scores, detection_classes, num_detections]
-
-    print('Starting Session, setting the GPU memory usage to %f' % gpu_memory)
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=gpu_memory)
-    sess_config = tf.ConfigProto(gpu_options=gpu_options)
-    persistent_sess = tf.Session(graph=detection_graph, config=sess_config)
-    return persistent_sess
-
-
+start_tf(app)
 
 ##################################################
 # API part
@@ -135,9 +126,11 @@ def predict():
         ##################################################
         # Tensorflow part
         ##################################################
-        sess = get_tf_session()
-        (boxes, scores, classes, num) = sess.run(g._fetches,
-            feed_dict={g._image_tensor: image_np_expanded})
+        sess = app.config['tf_sess']
+        fetches = app.config['tf_fetches'];
+        image_tensor = app.config['tf_image_tensor'];
+        (boxes, scores, classes, num) = sess.run(fetches,
+            feed_dict={image_tensor: image_np_expanded})
         ##################################################
         # END Tensorflow part
         ##################################################
