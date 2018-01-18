@@ -13,14 +13,13 @@ import os
 # The threshold is a difference between red pixels to blue and green pixels to detect a pig.
 
 # This is the video available in GitHub as an example
-videos = [('IMG_4855','leaning_jowler',30)]
+#videos = [('IMG_4855','leaning_jowler',30)]
 
 # This is the full dataset used to train the model
-#videos = [('IMG_4847','side',30),('IMG_4848','side_spot',30),('IMG_4849','razorback',30), \
-#    ('IMG_4851','trotter',30),('IMG_4852','side_spot',30),('IMG_4853','side',30),('IMG_4854','snouter',30), \
-#    ('IMG_4855','leaning_jowler',30),('IMG_4856','leaning_jowler',30),('IMG_4857','side_spot',45),('IMG_4858','side_spot',45), \
-#    ('IMG_4859','side',45),('IMG_4860','side',45),('IMG_4861','razorback',45),('IMG_4862','trotter',45), \
-#    ('IMG_4863','snouter',45),('IMG_4864','leaning_jowler',45)]
+videos = [('IMG_4941','side',30),('IMG_4942','side_spot',30),('IMG_4943','trotter',30), \
+    ('IMG_4944','razorback',30),('IMG_4946','snouter',30),('IMG_4947','leaning_jowler',30),('IMG_4948','leaning_jowler',45), \
+    ('IMG_4949','snouter',45),('IMG_4950','razorback',45),('IMG_4951','trotter',45),('IMG_4952','side_spot',45), \
+    ('IMG_4953','side',45)]
 
 # Extension of the video files
 videoext = '.MOV'
@@ -31,7 +30,7 @@ videoext = '.MOV'
 classes = [[], 'side','side_spot','razorback','trotter','snouter','leaning_jowler']
 
 # Maximum image size
-im_size = 720, 405
+im_size = 480, 480
 
 # Paths that are used for input and output files
 videopath = 'video/'
@@ -58,14 +57,14 @@ def find_pig(image,th):
 
 # Function to check whether the bounding box is limited to the image edge
 # This is used to remove those frames that may contain only a part of the object
-def check_bounding(box):
+def check_bounding(box, size):
     if box[0] <= 0: #left
         return 0
     if box[1] <= 0: #upper
         return 0
-    if box[2] >= im_size[0]: #right
+    if box[2] >= size[0]: #right
         return 0
-    if box[3] >= im_size[1]: #lower
+    if box[3] >= size[1]: #lower
         return 0
     return 1
 
@@ -73,10 +72,11 @@ def check_bounding(box):
 def save_debug_image(image,boundbox,classidx,videoname,count):
     if debugpath:
         new_image = image.copy()
+        actual_size = im.size
         draw = ImageDraw.Draw(new_image)
         draw.rectangle(boundbox, outline="red")
         text_x = boundbox[0]
-        if boundbox[3] < (im_size[1] - 15):
+        if boundbox[3] < (actual_size[1] - 15):
             text_y = boundbox[3] + 2
         elif boundbox[1] > 15:
             text_y = boundbox[1] - 15
@@ -105,21 +105,22 @@ for videotuple in videos:
           cv2.imwrite(imname, image)     # save frame as JPEG file
           im = Image.open(imname)
           im.thumbnail(im_size)
+          actual_size = im.size
           im.save(imname)
           boundbox = find_pig(im,th)
-          if check_bounding(boundbox):
+          if check_bounding(boundbox, actual_size):
               save_debug_image(im,boundbox,videoclass,videoname,count)
               im_dict = dict()
               im_dict["filename"] = imname
-              im_dict["height"] = im_size[1]
-              im_dict["width"] = im_size[0]
+              im_dict["height"] = actual_size[1]
+              im_dict["width"] = actual_size[0]
               im_dict["object"] = dict()
               # Bounding boxes are scaled to 0...1 for Tensorflow
               im_dict["object"]["bbox"] = dict()
-              im_dict["object"]["bbox"]["xmin"] = (1.0*boundbox[0])/im_size[0]
-              im_dict["object"]["bbox"]["ymin"] = (1.0*boundbox[1])/im_size[1]
-              im_dict["object"]["bbox"]["xmax"] = (1.0*boundbox[2])/im_size[0]
-              im_dict["object"]["bbox"]["ymax"] = (1.0*boundbox[3])/im_size[1]
+              im_dict["object"]["bbox"]["xmin"] = (1.0*boundbox[0])/actual_size[0]
+              im_dict["object"]["bbox"]["ymin"] = (1.0*boundbox[1])/actual_size[1]
+              im_dict["object"]["bbox"]["xmax"] = (1.0*boundbox[2])/actual_size[0]
+              im_dict["object"]["bbox"]["ymax"] = (1.0*boundbox[3])/actual_size[1]
               im_dict["object"]["name"] = videotuple[1]
               im_dict["object"]['difficult'] = 0
               im_dict["object"]['truncated'] = 0

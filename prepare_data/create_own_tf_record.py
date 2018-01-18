@@ -188,7 +188,7 @@ def main(_):
           writer.write(tf_example.SerializeToString())
     
         writer.close()
-
+    print("Wrote " + str(len(train_dataset)) + " training records and " + str(len(val_dataset)) + " validation records.")
 
 if __name__ == '__main__':
   tf.app.run()
