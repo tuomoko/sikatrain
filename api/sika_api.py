@@ -19,8 +19,8 @@ from object_detection.utils import visualization_utils as vis_util
 
 #TODO some better way to store the location of the model and label map
 
-frozen_model_filename="/home/tuomo/sikatrain/model/graph/frozen_inference_graph.pb" # Path to frozen model
-label_map_path="/home/tuomo/sikatrain/model/pig_label_map.pbtxt" # Path to label map
+frozen_model_filename=os.environ['FROZEN_MODEL'] # Path to frozen model
+label_map_path=os.environ['LABEL_MAP'] # Path to label map
 num_labels=6 # Number of labels
 gpu_memory=.5 # GPU memory per process
 

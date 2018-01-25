@@ -4,3 +4,4 @@ flask_cors
 pillow
 lxml
 gunicorn
+matplotlib
