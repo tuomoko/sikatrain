@@ -15,11 +15,18 @@ import os
 # This is the video available in GitHub as an example
 #videos = [('IMG_4855','leaning_jowler',30)]
 
-# This is the full dataset used to train the model
+# This is the first full dataset used to train the model
+'''
 videos = [('IMG_4941','side',30),('IMG_4942','side_spot',30),('IMG_4943','trotter',30), \
     ('IMG_4944','razorback',30),('IMG_4946','snouter',30),('IMG_4947','leaning_jowler',30),('IMG_4948','leaning_jowler',45), \
     ('IMG_4949','snouter',45),('IMG_4950','razorback',45),('IMG_4951','trotter',45),('IMG_4952','side_spot',45), \
     ('IMG_4953','side',45)]
+'''
+# This is the second one
+videos = [('IMG_5171','side_spot',45),('IMG_5172','snouter',45),('IMG_5173','side',45), \
+    ('IMG_5174','trotter',45),('IMG_5175','razorback',45),('IMG_5176','trotter',45),('IMG_5177','leaning_jowler',45), \
+    ('IMG_5178','snouter',45),('IMG_5179','side',45),('IMG_5180','side_spot',45),('IMG_5181','razorback',45), \
+    ('IMG_5182','side_spot',45),('IMG_5183','trotter',45)]
 
 # Extension of the video files
 videoext = '.MOV'
@@ -110,6 +117,9 @@ for videotuple in videos:
           boundbox = find_pig(im,th)
           if check_bounding(boundbox, actual_size):
               save_debug_image(im,boundbox,videoclass,videoname,count)
+              #im2 = im.crop(boundbox)
+              #actual_size = im2.size
+              #im2.save(imname)
               im_dict = dict()
               im_dict["filename"] = imname
               im_dict["height"] = actual_size[1]
@@ -121,6 +131,10 @@ for videotuple in videos:
               im_dict["object"]["bbox"]["ymin"] = (1.0*boundbox[1])/actual_size[1]
               im_dict["object"]["bbox"]["xmax"] = (1.0*boundbox[2])/actual_size[0]
               im_dict["object"]["bbox"]["ymax"] = (1.0*boundbox[3])/actual_size[1]
+              #im_dict["object"]["bbox"]["xmin"] = 1.0
+              #im_dict["object"]["bbox"]["ymin"] = 1.0
+              #im_dict["object"]["bbox"]["xmax"] = 1.0
+              #im_dict["object"]["bbox"]["ymax"] = 1.0
               im_dict["object"]["name"] = videotuple[1]
               im_dict["object"]['difficult'] = 0
               im_dict["object"]['truncated'] = 0

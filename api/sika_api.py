@@ -12,12 +12,15 @@ import numpy as np
 import uuid
 
 #from OpenSSL import SSL
-import ssl
+#import ssl
 
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 
-#TODO some better way to store the location of the model and label map
+#MongoDB
+from pymongo import MongoClient
+
+import datetime
 
 frozen_model_filename=os.environ['FROZEN_MODEL'] # Path to frozen model
 label_map_path=os.environ['LABEL_MAP'] # Path to label map
@@ -80,7 +83,8 @@ def serve_pil_image(pil_img):
 
 # General application configurations
 app = Flask(__name__)
-IM_SCALED_SIZE = 320, 320
+IM_SCALED_SIZE = 480, 480 # Max size for tensorflow work
+PROCESSED_IM_SIZE = 720, 720 # Max size for processed image
 UPLOAD_FOLDER = 'uploads'
 PROCESSED_FOLDER = 'processed'
 SCORE_THR = 0.5
@@ -135,18 +139,59 @@ def predict():
         # END Tensorflow part
         ##################################################
         
+        print "Classification done."
+
         class_squeeze = np.squeeze(classes).astype(np.int32)
         boxes_squeeze = np.squeeze(boxes)
         scores_squeeze = np.squeeze(scores)
         
+        # Reopen the full image after the classification has been done with the scaled one
+        image = Image.open(full_filename)
+        image = image.convert('RGB')
+        image.thumbnail(PROCESSED_IM_SIZE)
+        image_np = load_image_into_numpy_array(image)
+
         if scores_squeeze[1] > SCORE_THR:
             print "Two pigs found"
             pig1 = category_index[class_squeeze[0]]['name']
             pig2 = category_index[class_squeeze[1]]['name']
+            #Draw pig 1
+            ymin, xmin, ymax, xmax = boxes_squeeze[0]
+            vis_util.draw_bounding_box_on_image_array(
+                image_np,
+                ymin,
+                xmin,
+                ymax,
+                xmax,
+                color='RoyalBlue',
+                thickness=4,
+                use_normalized_coordinates=True)
+            #Draw pig 2
+            ymin, xmin, ymax, xmax = boxes_squeeze[1]
+            vis_util.draw_bounding_box_on_image_array(
+                image_np,
+                ymin,
+                xmin,
+                ymax,
+                xmax,
+                color='Red',
+                thickness=4,
+                use_normalized_coordinates=True)
         elif scores_squeeze[0] > SCORE_THR:
             print "One pig found"
             pig1 = 'bacon'
             pig2 = 'bacon'
+            #Draw box
+            ymin, xmin, ymax, xmax = boxes_squeeze[0]
+            vis_util.draw_bounding_box_on_image_array(
+                image_np,
+                ymin,
+                xmin,
+                ymax,
+                xmax,
+                color='Chocolate',
+                thickness=4,
+                use_normalized_coordinates=True)
         else:
             print "No pigs found"
             pig1 = ""
@@ -154,12 +199,10 @@ def predict():
         
         print "Pig 1 = " + pig1 + " Pig 2 = " + pig2
         
-        # Reopen the full image after classification
-        image = Image.open(full_filename)
-        image = image.convert('RGB')
-        image_np = load_image_into_numpy_array(image)
         
-        #Visualization of the results of a detection.
+        
+        
+        '''
         vis_util.visualize_boxes_and_labels_on_image_array(
              image_np,
              np.squeeze(boxes),
@@ -170,7 +213,8 @@ def predict():
              line_thickness=2,
              max_boxes_to_draw=2,
              min_score_thresh=SCORE_THR)
-        
+        '''
+
         processed_image = Image.fromarray(image_np)
         processed_filename = name + '.jpg'
         full_filename = os.path.join(PROCESSED_FOLDER, processed_filename)
@@ -179,6 +223,7 @@ def predict():
         return_data = dict()
         return_data['pig1'] = str(pig1)
         return_data['pig2'] = str(pig2)
+        return_data['uuid'] = str(name)
         return_data['img_url'] = os.path.join('processed', processed_filename)
         
         #retvalue = json.dumps(data)
@@ -191,12 +236,46 @@ def predict():
     
     print "Returning "+str(return_data)
     return jsonify(return_data)
+
+
+@app.route("/api/submit", methods=['POST'])
+def submit():
+    data = request.form
+    pig1_idx = 0
+    pig2_idx = 0
+    if "pig1" in data:
+        for idx, val in category_index.iteritems():
+            if val['name'] == data["pig1"]:
+                pig1_idx = idx
+                break
+    if "pig2" in data:
+        for idx, val in category_index.iteritems():
+            if val['name'] == data["pig2"]:
+                pig2_idx = idx
+                break
+
+    if "uuid" in data and pig1_idx > 0 and pig2_idx > 0:
+        print "Saving UUID="+data["uuid"]+" with pig1 = "+ data["pig1"]+", pig2 = "+ data["pig2"]
+        client = MongoClient("mongodb://localhost:27017")
+        db = client.sikatables
+        result = db.train_data.insert_one(
+            {
+                "uuid": data["uuid"],
+                "pig1": data["pig1"],
+                "pig2": data["pig2"],
+                "insert_date": datetime.datetime.utcnow()
+            }
+        )
+        #print(result)
+    return ""
+
+
 ##################################################
 # END API part
 ##################################################
 
 ##################################################
-# Serving the images
+# Serving the images (for debug purposes)
 ##################################################
 @app.route('/processed/<path:filename>')
 def download_file(filename):
@@ -206,7 +285,7 @@ def download_file(filename):
 ##################################################
 
 ##################################################
-# Index and other stuff
+# Index and other stuff (for debug purposes)
 ##################################################
 @app.route('/')
 def index():
@@ -220,12 +299,16 @@ def index():
 
 # Main function
 if __name__ == "__main__":
-    #context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-    #context.load_cert_chain('sika_api.crt', 'sika_api.key')
     app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # Prevent caching js files
 
     print('Starting the API')
+    # Run without SSL
     app.run(host= '0.0.0.0') #, ssl_context=context)
+
+    # To run with SSL, comment the line above and uncomment the lines below
+    #context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    #context.load_cert_chain('sika_api.crt', 'sika_api.key')
+    #app.run(host= '0.0.0.0', ssl_context=context)
     
     #Serve javascript and CSS files
     url_for('static', filename='app.js')

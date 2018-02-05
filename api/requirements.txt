@@ -5,3 +5,4 @@ pillow
 lxml
 gunicorn
 matplotlib
+pymongo
