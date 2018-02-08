@@ -240,7 +240,7 @@ def predict():
 
 @app.route("/api/submit", methods=['POST'])
 def submit():
-    data = request.form
+    data = request.get_json()
     pig1_idx = 0
     pig2_idx = 0
     if "pig1" in data:
@@ -272,8 +272,8 @@ def submit():
 @app.route('/api/submit_scores/<game_id>', methods=['PUT'])
 def submit_scores(game_id):
     gameid = game_id
-    if (game_id):
-        data = request.form
+    if (game_id)
+        data = request.get_json()
         if "players" in data and "turns" in data and "totals" in data:
             print "Saving Game with ID="+gameid+" with players = "+ data["players"]+", turns = "+ data["turns"]+", totals = "+data["totals"]
             client = MongoClient("mongodb://localhost:27017")
@@ -289,6 +289,16 @@ def submit_scores(game_id):
             )
     return ""
 
+@app.route('/api/scoreboard')
+def scoreboard():
+    client = MongoClient("mongodb://localhost:27017")
+    db = client.sikatables
+    names = db.score_data.distinct("players.name")
+    entries = list()
+    for name in names:
+        games = db.score_data.distinct("game_id",{"players.name" : name})
+        #result = db.score_data.find({"players.name" : name})
+    return render_template('show_entries.html', entries={})
 
 
 ##################################################
