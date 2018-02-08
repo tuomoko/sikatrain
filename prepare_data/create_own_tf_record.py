@@ -156,26 +156,26 @@ def main(_):
     random.seed(42)
     random.shuffle(full_dataset)
     num_examples = len(full_dataset)
-    if div_traindata > 0 and div_traindata < 1:
+    if div_traindata >= 0 and div_traindata < 1:
         num_train = int(div_traindata * num_examples)
     else:
         num_train = num_examples
     train_dataset = full_dataset[:num_train]
     val_dataset = full_dataset[num_train:]
 
-    writer = tf.python_io.TFRecordWriter(train_file)
-
     label_map_dict = label_map_util.get_label_map_dict(FLAGS.label_map_path)
-    
-    logging.info('Reading training data from %s dataset.', input_file)
-    
-    for idx, example in enumerate(train_dataset):
-      if idx % 100 == 0:
-        logging.info('On image %d of %d', idx, len(train_dataset))
-      tf_example = dict_to_tf_example(example, label_map_dict, FLAGS.input_path)
-      writer.write(tf_example.SerializeToString())
-    
-    writer.close()
+
+    if len(train_dataset) > 0:
+      writer = tf.python_io.TFRecordWriter(train_file)
+      logging.info('Reading training data from %s dataset.', input_file)
+      
+      for idx, example in enumerate(train_dataset):
+        if idx % 100 == 0:
+          logging.info('On image %d of %d', idx, len(train_dataset))
+        tf_example = dict_to_tf_example(example, label_map_dict, FLAGS.input_path)
+        writer.write(tf_example.SerializeToString())
+      
+      writer.close()
     
     if len(val_dataset) > 0:
         writer = tf.python_io.TFRecordWriter(val_file)

@@ -23,10 +23,31 @@ videos = [('IMG_4941','side',30),('IMG_4942','side_spot',30),('IMG_4943','trotte
     ('IMG_4953','side',45)]
 '''
 # This is the second one
+'''
 videos = [('IMG_5171','side_spot',45),('IMG_5172','snouter',45),('IMG_5173','side',45), \
     ('IMG_5174','trotter',45),('IMG_5175','razorback',45),('IMG_5176','trotter',45),('IMG_5177','leaning_jowler',45), \
     ('IMG_5178','snouter',45),('IMG_5179','side',45),('IMG_5180','side_spot',45),('IMG_5181','razorback',45), \
     ('IMG_5182','side_spot',45),('IMG_5183','trotter',45)]
+'''
+# This is the third one
+'''
+videos = \
+[('IMG_5190','trotter',25),('IMG_5191','side',30),('IMG_5192','side_spot',20), \
+('IMG_5193','razorback',32),('IMG_5195','snouter',25),('IMG_5196','leaning_jowler',25), \
+('IMG_5198','trotter',55),('IMG_5199','side_spot',50), ('IMG_5200','side',50), \
+('IMG_5201','razorback',52),('IMG_5202','snouter',49), ('IMG_5203','leaning_jowler',47), \
+('IMG_5204','trotter',40),('IMG_5205','side_spot',40),('IMG_5206','side',40), \
+('IMG_5207','razorback',40),('IMG_5208','snouter',35),('IMG_5209','leaning_jowler',35), \
+('IMG_5210','trotter',100),('IMG_5211','side',90), ('IMG_5212','side_spot',90), \
+('IMG_5213','razorback',90),('IMG_5214','snouter',90), ('IMG_5215','leaning_jowler',90), \
+('IMG_5216','trotter',45),('IMG_5217','side_spot',45),('IMG_5218','side',45), \
+('IMG_5219','razorback',45),('IMG_5220','snouter',45),('IMG_5221','leaning_jowler',35)]
+'''
+# This is the third, independent validation set
+videos = \
+[('IMG_5222','trotter',40),('IMG_5223','side_spot',40),('IMG_5224','side',40), \
+('IMG_5225','razorback',40),('IMG_5226','snouter',40),('IMG_5227','leaning_jowler',40)]
+
 
 # Extension of the video files
 videoext = '.MOV'
@@ -43,6 +64,7 @@ im_size = 480, 480
 videopath = 'video/'
 imagepath = 'jpg/'
 debugpath = 'debug/'
+maskpath = 'debug/mask/'
 
 
 # Non-machine learning based find the pig function
@@ -55,6 +77,8 @@ def find_pig(image,th):
             mask.append(0)
     mask_img = image.convert('1')
     mask_img.putdata(mask)
+    #maskname = maskpath+"mask.jpg"
+    #mask_img.save(maskname)
     boundary = mask_img.getbbox()
     if boundary:
         bound_large = (boundary[0]-10,boundary[1]-10,boundary[2]+10,boundary[3]+10)
