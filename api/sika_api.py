@@ -269,6 +269,27 @@ def submit():
         #print(result)
     return ""
 
+@app.route('/api/submit_scores/<game_id>', methods=['PUT'])
+def submit_scores(game_id):
+    gameid = game_id
+    if (game_id)
+        data = request.form
+        if "players" in data and "turns" in data and "totals" in data:
+            print "Saving Game with ID="+gameid+" with players = "+ data["players"]+", turns = "+ data["turns"]+", totals = "+data["totals"]
+            client = MongoClient("mongodb://localhost:27017")
+            db = client.sikatables
+            result = db.score_data.insert_one(
+                {
+                    "game_id": gameid,
+                    "players": data["players"],
+                    "turns": data["turns"],
+                    "totals": data["totals"],
+                    "insert_date": datetime.datetime.utcnow()
+                }
+            )
+    return ""
+
+
 
 ##################################################
 # END API part
