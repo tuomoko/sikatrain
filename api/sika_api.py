@@ -272,7 +272,7 @@ def submit():
 @app.route('/api/submit_scores/<game_id>', methods=['PUT'])
 def submit_scores(game_id):
     gameid = game_id
-    if (game_id)
+    if (game_id):
         data = request.form
         if "players" in data and "turns" in data and "totals" in data:
             print "Saving Game with ID="+gameid+" with players = "+ data["players"]+", turns = "+ data["turns"]+", totals = "+data["totals"]
