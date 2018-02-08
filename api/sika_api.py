@@ -275,7 +275,7 @@ def submit_scores(game_id):
     if (game_id):
         data = request.get_json()
         if "players" in data and "turns" in data and "totals" in data:
-            print "Saving Game with ID="+gameid+" with players = "+ data["players"]+", turns = "+ data["turns"]+", totals = "+data["totals"]
+            print "Saving Game with ID="+str(gameid)+" with players = "+ str(data["players"])+", turns = "+ str(data["turns"])+", totals = "+str(data["totals"])
             client = MongoClient("mongodb://localhost:27017")
             db = client.sikatables
             result = db.score_data.insert_one(
