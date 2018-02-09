@@ -296,7 +296,9 @@ def scoreboard():
     names = db.score_data.distinct("players")
     entries = list()
     for name in names:
-        games = db.score_data.find({"players" : name})
+        #games = db.score_data.find({"players" : name})
+        # Finds only games with maximum of more than or equal to 100 points total
+        games = db.score_data.find({"players" : name, 'totals': {"$elemMatch":{"$elemMatch":{'$gte': 100}}}})
         my_n_games = games.count()
         my_total_score = 0
         for game in games:
