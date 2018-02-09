@@ -303,6 +303,7 @@ def scoreboard():
             my_idx = game['players'].index(name)
             my_total_score += int(game['totals'][my_idx][-1])
         entries.append({'name': name, 'games':my_n_games, 'score':my_total_score})
+    entries.sort(key=lambda x: x['score'], reverse=True)
     return render_template('scoreboard.html', entries=entries)
 
 
@@ -318,6 +319,17 @@ def download_file(filename):
     return send_from_directory(PROCESSED_FOLDER, filename, as_attachment=True)
 ##################################################
 # END Serving the images
+##################################################
+
+
+##################################################
+# Serving the static files (for debug purposes)
+##################################################
+@app.route('/api/static/<path:path>')
+def send_static(path):
+    return send_from_directory('static', path)
+##################################################
+# END Serving the static files
 ##################################################
 
 ##################################################
@@ -340,12 +352,10 @@ if __name__ == "__main__":
     print('Starting the API')
     # Run without SSL
     app.run(host= '0.0.0.0') #, ssl_context=context)
-
     # To run with SSL, comment the line above and uncomment the lines below
     #context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
     #context.load_cert_chain('sika_api.crt', 'sika_api.key')
     #app.run(host= '0.0.0.0', ssl_context=context)
     
     #Serve javascript and CSS files
-    url_for('static', filename='app.js')
-    url_for('static', filename='style.css')
+    

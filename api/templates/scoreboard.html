@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Heittovimpain - Scoreboard</title>
+    <style>
+      #scores {
+          font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+          border-collapse: collapse;
+          width: 100%;
+          text-align: left;
+      }
+
+      #scores td, #scores th {
+          border: 1px solid #ddd;
+          padding: 8px;
+      }
+
+      #scores tr:nth-child(even){background-color: #f2f2f2;}
+
+      #scores tr:hover {background-color: #ddd;}
+
+      #scores th {
+          padding-top: 12px;
+          padding-bottom: 12px;
+          text-align: left;
+          background-color: #d23030;
+          color: white;
+      }
+    </style>
+  </head>
+  <body>
+      <h1>High scores</h1>
+      <table id="scores">
+        <tr><th>Name</th><th>Games</th><th>Total score</th></tr>
+        {% for entry in entries %}
+          <tr><td>{{ entry.name }}</td><td>{{ entry.games }}</td><td>{{ entry.score }}</td></tr>
+        {% else %}
+          <tr><td colspan="2">Unbelievable.  No entries here so far</td></tr>
+        {% endfor %}
+        </table>
+  </body>
+</html>
+
