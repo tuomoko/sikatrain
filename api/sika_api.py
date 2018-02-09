@@ -301,9 +301,9 @@ def scoreboard():
         my_total_score = 0
         for game in games:
             my_idx = game['players'].index(name)
-            my_total_score += game['totals'][my_idx][-1]
+            my_total_score += int(game['totals'][my_idx][-1])
         entries.append({'name': name, 'games':my_n_games, 'score':my_total_score})
-    return render_template('show_entries.html', entries=entries)
+    return render_template('scoreboard.html', entries=entries)
 
 
 ##################################################
