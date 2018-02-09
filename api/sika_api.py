@@ -293,12 +293,17 @@ def submit_scores(game_id):
 def scoreboard():
     client = MongoClient("mongodb://localhost:27017")
     db = client.sikatables
-    names = db.score_data.distinct("players.name")
+    names = db.score_data.distinct("players")
     entries = list()
     for name in names:
-        games = db.score_data.distinct("game_id",{"players.name" : name})
-        #result = db.score_data.find({"players.name" : name})
-    return render_template('show_entries.html', entries={})
+        games = db.score_data.find("players" : name)
+        my_n_games = games.count()
+        my_total_score = 0
+        for game in games:
+            my_idx = game['players'].index(name)
+            my_total_score += game['totals'][my_idx][-1]
+        entries.append({'name': name, 'games':my_n_games, 'score':my_total_score})
+    return render_template('show_entries.html', entries=entries)
 
 
 ##################################################
