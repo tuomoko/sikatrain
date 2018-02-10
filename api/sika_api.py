@@ -153,10 +153,14 @@ def predict():
 
         if scores_squeeze[1] > SCORE_THR:
             print "Two pigs found"
-            pig1 = category_index[class_squeeze[0]]['name']
-            pig2 = category_index[class_squeeze[1]]['name']
+            draw_boxes = [(boxes_squeeze[0],class_squeeze[0]), (boxes_squeeze[1],class_squeeze[1])]
+            # Sort boxes such that blue is the upper one
+            draw_boxes.sort(key=lambda x: x[0][2])
+            pig1 = category_index[draw_boxes[0][1]]['name']
+            pig2 = category_index[draw_boxes[1][1]]['name']
+
             #Draw pig 1
-            ymin, xmin, ymax, xmax = boxes_squeeze[0]
+            ymin, xmin, ymax, xmax = draw_boxes[0][0]
             vis_util.draw_bounding_box_on_image_array(
                 image_np,
                 ymin,
@@ -167,7 +171,7 @@ def predict():
                 thickness=4,
                 use_normalized_coordinates=True)
             #Draw pig 2
-            ymin, xmin, ymax, xmax = boxes_squeeze[1]
+            ymin, xmin, ymax, xmax = draw_boxes[1][0]
             vis_util.draw_bounding_box_on_image_array(
                 image_np,
                 ymin,
