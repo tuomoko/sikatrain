@@ -309,7 +309,7 @@ def scoreboard():
         for game in games:
             my_idx = game['players'].index(name)
             my_total_score += int(game['totals'][my_idx][-1])
-            totals = game['totals'].map(lambda x: x[-1])
+            totals = map(lambda x: x[-1], game['totals'])
             winner_idx = totals.index(max(totals))
             if (winner_idx == my_idx):
                 my_wins += 1
