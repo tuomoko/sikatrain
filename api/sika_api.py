@@ -305,9 +305,15 @@ def scoreboard():
         games = db.score_data.find({"players" : name, 'totals': {"$elemMatch":{"$elemMatch":{'$gte': 100}}}})
         my_n_games = games.count()
         my_total_score = 0
+        my_wins = 0
         for game in games:
             my_idx = game['players'].index(name)
             my_total_score += int(game['totals'][my_idx][-1])
+            totals = game[totals].map(lambda x: x[-1])
+            winner_idx = totals.index(max(totals))
+            if (winner_idx == my_idx):
+                my_wins += 1
+
         entries.append({'name': name, 'games':my_n_games, 'score':my_total_score})
     entries.sort(key=lambda x: x['score'], reverse=True)
     return render_template('scoreboard.html', entries=entries)

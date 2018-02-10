@@ -32,11 +32,11 @@
   <body>
       <h1>High scores</h1>
       <table id="scores">
-        <tr><th>Name</th><th>Games</th><th>Total score</th></tr>
+          <tr><th>Name</th><th>Games</th><th>Wins</th><th>Total score</th></tr>
         {% for entry in entries %}
-          <tr><td>{{ entry.name }}</td><td>{{ entry.games }}</td><td>{{ entry.score }}</td></tr>
+        <tr><td>{{ entry.name }}</td><td>{{ entry.games }}</td><td>{{ entry.wins }}</td><td>{{ entry.score }}</td></tr>
         {% else %}
-          <tr><td colspan="2">Unbelievable.  No entries here so far</td></tr>
+          <tr><td colspan="4">Unbelievable.  No entries here so far</td></tr>
         {% endfor %}
         </table>
   </body>
