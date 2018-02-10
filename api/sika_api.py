@@ -309,12 +309,12 @@ def scoreboard():
         for game in games:
             my_idx = game['players'].index(name)
             my_total_score += int(game['totals'][my_idx][-1])
-            totals = game[totals].map(lambda x: x[-1])
+            totals = game['totals'].map(lambda x: x[-1])
             winner_idx = totals.index(max(totals))
             if (winner_idx == my_idx):
                 my_wins += 1
 
-        entries.append({'name': name, 'games':my_n_games, 'score':my_total_score})
+        entries.append({'name': name, 'games':my_n_games, 'score':my_total_score, 'wins': my_wins})
     entries.sort(key=lambda x: x['score'], reverse=True)
     return render_template('scoreboard.html', entries=entries)
 
