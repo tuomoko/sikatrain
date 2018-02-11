@@ -92,4 +92,6 @@ export LABEL_MAP="/path/to/sikatrain/model/pig_label_map.pbtxt"
 python sika_api.py
 ```
 
+## User interface
+An user interface to use the API is in https://github.com/rlaakkol/sikascore
 
